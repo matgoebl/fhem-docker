@@ -17,7 +17,7 @@ services:
     image:  ghcr.io/fhem/fhem/fhem-minimal-docker:3.1.3-bullseye
     restart: always
     networks:
-      - fhem_net
+      - fhem_docker_net
     ports:
       - "8083:8083"
     volumes:
