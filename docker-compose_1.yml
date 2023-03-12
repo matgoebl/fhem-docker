@@ -14,7 +14,7 @@ networks:
 
 services:
   fhem:
-    image:  ghcr.io/fhem/fhem/fhem-minimal-docker:3-bullseye
+    image:  ghcr.io/fhem/fhem/fhem-minimal-docker:3.1.3-bullseye
     restart: always
     networks:
       - fhem_net
@@ -24,7 +24,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - "/opt/docker/fhem/app/:/opt/fhem/"
+      - vol-fhem-dblog:/opt/fhem/
 
     mem_limit: 1gb
     memswap_limit: 1gb
@@ -43,7 +43,8 @@ services:
      - REMOTE_SQL="https://svn.fhem.de/trac/export/HEAD/trunk/fhem/contrib/dblog/db_create_mysql.sql"
      - TZ=Europe/Berlin
     volumes:
-      - /opt/docker/fhem/data:/config
+      - vol-fhem-dblog:/config
+
     restart: unless-stopped
     networks:
      - fhem_net
@@ -54,8 +55,14 @@ services:
     networks: 
      - fhem_net
     volumes:
-      - "/opt/docker/fhem/alexa-fhem/:/alexa-fhem/"
+      - vol-fhem-alexa:/alexa-fhem/
     environment:
       ALEXAFHEM_UID: 6062
       ALEXAFHEM_GID: 6062
       TZ: Europe/Berlin
+
+volumes:
+  vol_fhem-alexa:
+  vol-fhem-app:
+  vol-fhem-dblog:
+
