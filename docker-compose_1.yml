@@ -24,7 +24,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - vol-fhem-dblog:/opt/fhem/
+      - vol-fhem-app:/opt/fhem/
 
     mem_limit: 1gb
     memswap_limit: 1gb
