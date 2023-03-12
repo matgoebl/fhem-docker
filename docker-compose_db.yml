@@ -1,0 +1,35 @@
+version: '2.3'
+
+networks:
+  fhem_net:
+    driver: bridge
+    # enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.27.0.0/28
+          gateway: 172.27.0.1
+        - subnet: fd00:0:0:0:27::/80
+          gateway: fd00:0:0:0:27::1
+
+services:
+  fhem:
+      - "db"
+
+  db:
+    image: linuxserver/mariadb:10.6.12
+    container_name: mariadb
+    environment:
+     - PGID=1003
+     - REMOTE_SQL="https://svn.fhem.de/trac/export/HEAD/trunk/fhem/contrib/dblog/db_create_mysql.sql"
+     - TZ=Europe/Berlin
+    volumes:
+      - vol-fhem-dblog:/config
+
+    restart: unless-stopped
+    networks:
+     - fhem_net
+
+volumes:
+  vol-fhem-dblog:
+
