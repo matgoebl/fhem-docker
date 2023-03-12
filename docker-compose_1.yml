@@ -1,0 +1,61 @@
+version: '2.3'
+
+networks:
+  fhem_net:
+    driver: bridge
+    # enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.27.0.0/28
+          gateway: 172.27.0.1
+        - subnet: fd00:0:0:0:27::/80
+          gateway: fd00:0:0:0:27::1
+
+services:
+  fhem:
+    image:  ghcr.io/fhem/fhem/fhem-minimal-docker:3-bullseye
+    restart: always
+    networks:
+      - fhem_net
+    depends_on: 
+      - "db"
+      - "alexa-fhem"
+    ports:
+      - "8083:8083"
+    volumes:
+      - "/opt/docker/fhem/app/:/opt/fhem/"
+
+    mem_limit: 1gb
+    memswap_limit: 1gb
+    environment:
+      FHEM_UID: 6061
+      FHEM_GID: 6061
+      TIMEOUT: 10
+      RESTART: 1 
+      TZ: Europe/Berlin
+
+  db:
+    image: linuxserver/mariadb:10.6.12
+    container_name: mariadb
+    environment:
+     - PGID=1003
+     - REMOTE_SQL="https://svn.fhem.de/trac/export/HEAD/trunk/fhem/contrib/dblog/db_create_mysql.sql"
+     - TZ=Europe/Berlin
+    volumes:
+      - /opt/docker/fhem/data:/config
+    restart: unless-stopped
+    networks:
+     - fhem_net
+
+  alexa-fhem:
+    image: ghcr.io/fhem/fhem/alexa-fhem:4.0.1 
+    restart: always
+    networks: 
+     - fhem_net
+    volumes:
+      - "/opt/docker/fhem/alexa-fhem/:/alexa-fhem/"
+    environment:
+      ALEXAFHEM_UID: 6062
+      ALEXAFHEM_GID: 6062
+      TZ: Europe/Berlin
