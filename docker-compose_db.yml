@@ -3,6 +3,7 @@ version: '2.3'
 
 services:
   fhem:
+    depends_on:
       - "db"
 
   db:
