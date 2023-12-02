@@ -1,0 +1,7 @@
+https://fhem.de/fhemupdate/controls_fhem.txt
+https://raw.githubusercontent.com/nesges/Fhem-Modules/master/controls_nesges-fhem-modules.txt
+https://raw.githubusercontent.com/uniqueck/fhem-abfall/master/controls_fhemabfall.txt
+https://raw.githubusercontent.com/klein0r/fhem-tasmota/master/controls_tasmota.txt
+https://raw.githubusercontent.com/knowthelist/fhem-tablet-ui/master/controls_fhemtabletui.txt
+https://raw.githubusercontent.com/toelg/fhem-tasmota/master/controls_tasmotadevice.txt
+https://raw.githubusercontent.com/matgoebl/FhAPI/master/controls_FhAPI.txt

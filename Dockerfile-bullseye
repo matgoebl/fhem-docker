@@ -19,7 +19,7 @@ ENV LANG=en_US.UTF-8 \
    TZ=Europe/Berlin
 
 # Custom installation packages
-ARG APT_PKGS=""
+ARG APT_PKGS=android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs xmlindent python3-gpxpy
 
 RUN sed -i "s/bullseye main/bullseye main contrib non-free/g" /etc/apt/sources.list \
     && sed -i "s/bullseye-updates main/bullseye-updates main contrib non-free/g" /etc/apt/sources.list \
@@ -427,8 +427,8 @@ RUN if [ "${PIP_PKGS}" != "" ] || [ "${IMAGE_LAYER_PYTHON}" != "0" ] || [ "${IMA
 ARG NPM_PKGS=""
 
 # Custom image layers options:
-ARG IMAGE_LAYER_NODEJS="1"
-ARG IMAGE_LAYER_NODEJS_EXT="1"
+ARG IMAGE_LAYER_NODEJS="0"
+ARG IMAGE_LAYER_NODEJS_EXT="0"
 
 # Add nodejs app layer
 RUN if ( [ "${NPM_PKGS}" != "" ] || [ "${IMAGE_LAYER_NODEJS}" != "0" ] || [ "${IMAGE_LAYER_NODEJS_EXT}" != "0" ] ) ; then \
@@ -461,22 +461,43 @@ RUN if ( [ "${NPM_PKGS}" != "" ] || [ "${IMAGE_LAYER_NODEJS}" != "0" ] || [ "${I
 
 FROM bullseye_base as bullseye_with-fhem
 
+RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get update \
+    && LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
+    android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs
+
 # Install base environment, cache is invalidated here, because we set a BUILD_DATE Variable which changes every run.
 COPY src/entry.sh src/health-check.sh src/ssh_known_hosts.txt /
 COPY src/find-* /usr/local/bin/
 
 # Add FHEM app layer
-# Note: Manual checkout is required if build is not run by Github Actions workflow:
-#   svn co https://svn.fhem.de/fhem/trunk ./src/fhem/trunk
+RUN rm -rf /opt/fhem && svn co https://svn.fhem.de/fhem/trunk/fhem /opt/fhem 
 
-COPY src/fhem/trunk/fhem/ /fhem/
-COPY src/FHEM/ /fhem/FHEM
+COPY src/FHEM/ /opt/fhem/FHEM/
+COPY src/fhem/ /opt/fhem/
+
+RUN echo download all packages listed in src/FHEM/controls.txt... && \
+    find-and-download-dependencies.sh /opt/fhem/
+
+RUN echo install contrib/WebViewControl and DeviceMonitor... && \
+    cd /opt/fhem/ && \
+    cp contrib/WebViewControl/www/pgm2/* www/pgm2/ && \
+    cp contrib/WebViewControl/www/images/default/* www/images/default/ && \
+    cp contrib/WebViewControl/95_WebViewControl.pm FHEM/ && \
+    cp contrib/DeviceMonitor/98_DeviceMonitor.pm FHEM/
+
+COPY patches /tmp/patches
+RUN echo apply patches... && \
+    cd /opt/fhem/ && \
+    patch -p1 < /tmp/patches/98_DeviceMonitor.patch && \
+    patch -p1 < /tmp/patches/98_FireTV.patch && \
+    patch -p1 < /tmp/patches/98_rain.patch && \
+    rm -rf /tmp/patches
 
 # FHEM specific ENVs
 ENV LOGFILE=./log/fhem-%Y-%m-%d.log \
    TELNETPORT=7072 \
-   FHEM_UID=6061 \
-   FHEM_GID=6061 \
+   FHEM_UID=10001 \
+   FHEM_GID=10001 \
    FHEM_PERM_DIR=0750 \
    FHEM_PERM_FILE=0640 \
    UMASK=0037 \
@@ -485,6 +506,7 @@ ENV LOGFILE=./log/fhem-%Y-%m-%d.log \
    I2C_GID=6003 \
    TIMEOUT=10 \
    CONFIGTYPE=fhem.cfg
+# N.B.: Run as user 10001, so it it satisfies kubesec's requirement RUNASUSER>10000.
 
 # Moved AGS to the end, because it changes every run and invalidates the cache for all following steps  https://github.com/moby/moby/issues/20136
 # Arguments to instantiate as variables
@@ -542,6 +564,11 @@ LABEL org.opencontainers.image.created=${BUILD_DATE} \
 
 RUN chmod 755 /*.sh /usr/local/bin/* \ 
     && echo "org.opencontainers.image.created=${BUILD_DATE}\norg.opencontainers.image.authors=${L_AUTHORS}\norg.opencontainers.image.url=${L_URL}\norg.opencontainers.image.documentation=${L_USAGE}\norg.opencontainers.image.source=${L_VCS_URL}\norg.opencontainers.image.version=${IMAGE_VERSION}\norg.opencontainers.image.revision=${IMAGE_VCS_REF}\norg.opencontainers.image.vendor=${L_VENDOR}\norg.opencontainers.image.licenses=${L_LICENSES}\norg.opencontainers.image.title=${L_TITLE}\norg.opencontainers.image.description=${L_DESCR}\norg.fhem.authors=${L_AUTHORS_FHEM}\norg.fhem.url=${L_URL_FHEM}\norg.fhem.documentation=${L_USAGE_FHEM}\norg.fhem.source=${L_VCS_URL_FHEM}\norg.fhem.version=${FHEM_VERSION}\norg.fhem.revision=${VCS_REF}\norg.fhem.vendor=${L_VENDOR_FHEM}\norg.fhem.licenses=${L_LICENSES_FHEM}\norg.fhem.description=${L_DESCR_FHEM}" > /image_info
+
+RUN groupadd --force --gid ${FHEM_GID} --non-unique fhem && \
+    useradd --home /opt/fhem --shell /bin/bash --uid ${FHEM_UID} --no-create-home --no-user-group --non-unique fhem && \
+    usermod --append --gid ${FHEM_GID} --groups ${FHEM_GID} fhem && \
+    chown -R ${FHEM_UID}:${FHEM_GID} /opt/fhem
 
 VOLUME [ "/opt/fhem" ]
 

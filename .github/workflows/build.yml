@@ -29,7 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dockerfile: [Dockerfile, Dockerfile-bullseye]
+        # dockerfile: [Dockerfile, Dockerfile-bullseye]
+        dockerfile: [Dockerfile-bullseye]
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout this repository
@@ -47,16 +48,16 @@ jobs:
 
         id: gitVars
 
-      - name: Prepare SVN repository checkout and variables
-        id: prepareSVN
-        uses: ./.github/workflows/prepare-svn
+      # - name: Prepare SVN repository checkout and variables
+      #   id: prepareSVN
+      #   uses: ./.github/workflows/prepare-svn
 
       - name: Prepare docker for build and publish
         id: prepareDOCKER
         uses: ./.github/workflows/prepare-docker
         with:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          # DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          # DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
           GHCR_OWNER: ${{ github.repository_owner }} 
           GHCR_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}   
           DOCKERFILE: ${{ matrix.dockerfile }}
@@ -132,7 +133,8 @@ jobs:
     needs: test_build
     strategy:
       matrix:
-        dockerfile: [Dockerfile, Dockerfile-bullseye]
+        # dockerfile: [Dockerfile, Dockerfile-bullseye]
+        dockerfile: [Dockerfile-bullseye]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -150,16 +152,16 @@ jobs:
           echo "IMAGE_VERSION=$( git describe --tags --dirty --match "v[0-9]*")" >> $GITHUB_OUTPUT
         id: gitVars
 
-      - name: Prepare SVN repository checkout and variables
-        id: prepareSVN
-        uses: ./.github/workflows/prepare-svn
+      # - name: Prepare SVN repository checkout and variables
+      #   id: prepareSVN
+      #   uses: ./.github/workflows/prepare-svn
 
       - name: Prepare docker for build and publish
         id: prepareDOCKER
         uses: ./.github/workflows/prepare-docker
         with:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          # DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          # DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
           GHCR_OWNER: ${{ github.repository_owner }} 
           GHCR_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}   
           DOCKERFILE: ${{ matrix.dockerfile }}

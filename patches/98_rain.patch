@@ -1,0 +1,11 @@
+--- fhem/FHEM/98_rain.pm.orig	2023-12-02 12:50:07.012141503 +0100
++++ fhem/FHEM/98_rain.pm	2023-12-02 12:50:09.176193741 +0100
+@@ -154,7 +154,7 @@
+        			$DayChangeTimeHour = $1;
+        			$DayChangeTimeMinutes = $2;
+        			$HourChangeTimeMinutes = $DayChangeTimeMinutes;
+-       			Log3 $hash, 4, "Attribut matchs TimeCode DayChangeTime='$DayChangeTimeHour:$DayChangeTimeMinutes' ";
++       			#Log3 $hash, 4, "Attribut matchs TimeCode DayChangeTime='$DayChangeTimeHour:$DayChangeTimeMinutes' ";
+    				# tue etwas ...
+ 			}
+ 			else

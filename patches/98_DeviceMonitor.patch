@@ -1,0 +1,64 @@
+--- fhem/FHEM/98_DeviceMonitor.pm.orig	2018-11-07 16:20:20.240267486 +0100
++++ fhem/FHEM/98_DeviceMonitor.pm	2021-05-31 21:58:17.851674839 +0200
+@@ -22,8 +22,8 @@
+ 	$hash->{NotifyFn}  = "DeviceMonitor_Notify";
+ 	$hash->{GetFn}     = "DeviceMonitor_Get";
+ 	$hash->{AttrList}  = "disable:0,1";
+-	$hash->{FW_summaryFn} = "DeviceMonitor_FwFn";
+-    $hash->{FW_detailFn}  = "DeviceMonitor_FwFn";
++#	$hash->{FW_summaryFn} = "DeviceMonitor_FwFn";
++#	$hash->{FW_detailFn}  = "DeviceMonitor_FwFn";
+ 	addToAttrList("device_timeout"); 
+ }
+ 
+@@ -113,12 +113,20 @@
+ 	if ($timeoutinterval < 1) #device_timeout set to 0, remove it from monitor
+ 		{
+ 			DeviceMonitor_Remove($ownName,$devName);
+-			RemoveInternalTimer($devhash);
++			RemoveInternalTimer($devhash, "DeviceMonitor_Timer");
+ 		}
+ 	else 
+ 		{
+-			if ($devState ne "alive"){DoTrigger($devName,"health_state: alive")};
+-			RemoveInternalTimer($devhash);
++#			my $has_alive = ReadingsVal($devName, "devicemonitor_alive", "") ne "";
++			my $has_alive = ReadingsVal($devName, "alive", "") ne "";
++			if ( $has_alive ) {
++				my $events = deviceEvents($devhash,1);
++				return if( !$events );
++				my $alive_changed = grep /^alive:/, @{$events};
++				return if ! $alive_changed;
++			}
++			if ($devState ne "alive"){fhem("sleep 0.01; trigger $devName health_state: alive")}; #{DoTrigger($devName,"health_state: alive")};
++			RemoveInternalTimer($devhash, "DeviceMonitor_Timer");
+ 			$devhash->{HEALTH_STATE} = "alive";
+ 			$devhash->{HEALTH_TIME} = TimeNow();
+ 			$ownhash->{READINGS}{$devName}{VAL} = "alive";
+@@ -156,7 +164,7 @@
+ 			$defs{$ownName}{READINGS}{$devName}{TIME} = TimeNow();
+ 			$defs{$ownName}{READINGS}{$devName}{VAL} = "dead";
+ 		}
+-	RemoveInternalTimer($devhash);
++	RemoveInternalTimer($devhash, "DeviceMonitor_Timer");
+ #**************************** End of Code *****************************************
+ }
+ 
+@@ -251,7 +259,7 @@
+ 			 if(defined($defs{$_[1]}{HEALTH_MONITORED_BY})){delete $defs{$_[1]}{HEALTH_MONITORED_BY}};
+ 			 if(defined($defs{$_[1]}{HEALTH_STATE})){delete $defs{$_[1]}{HEALTH_STATE}};
+ 			 if(defined($defs{$_[1]}{HEALTH_TIME})){delete $defs{$_[1]}{HEALTH_TIME}};
+-			 RemoveInternalTimer($defs{$_[1]});
++			 RemoveInternalTimer($defs{$_[1]}, "DeviceMonitor_Timer");
+ 			 Log 4, "'$_[1]' is no longer monitored by '$_[0]'";
+ 		}
+ 	elsif(uc($_[1]) eq "ALL") #remove all devices from monitor
+@@ -262,7 +270,7 @@
+ 				if(defined($defs{$readings_name}{HEALTH_MONITORED_BY})){delete $defs{$readings_name}{HEALTH_MONITORED_BY}};
+ 				if(defined($defs{$readings_name}{HEALTH_STATE})){delete $defs{$readings_name}{HEALTH_STATE}};
+ 				if(defined($defs{$readings_name}{HEALTH_TIME})){delete $defs{$readings_name}{HEALTH_TIME}};
+-				RemoveInternalTimer($defs{$readings_name});
++				RemoveInternalTimer($defs{$readings_name}, "DeviceMonitor_Timer");
+ 			}
+ 			Log 4, "all devices removed from '$_[0]', please note that devices will appear again if their device_timeout attr is still set and '$_[0]' is defined and enabled!";
+ 		}

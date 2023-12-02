@@ -1,0 +1,39 @@
+--- fhem/FHEM/98_FireTV.pm.orig	2021-11-17 21:36:18.099802156 +0100
++++ fhem/FHEM/98_FireTV.pm	2022-04-10 11:36:19.913240473 +0200
+@@ -640,7 +640,7 @@
+         Log3 $name, 4, "[$name] FireTV_adb command: ".$hash->{helper}{$name}{lastadbcmd};
+ 
+         # execute command
+-        $hash->{helper}{$name}{lastadbresponse} = `$hash->{helper}{$name}{lastadbcmd} 2>&1` || '';
++        $hash->{helper}{$name}{lastadbresponse} = `timeout 3 $hash->{helper}{$name}{lastadbcmd} 2>&1` || '';
+         
+         # check if adb server needs a restart
+         if($hash->{helper}{$name}{lastadbresponse} =~ /cannot bind '.*?:5037'/) {
+@@ -648,8 +648,8 @@
+             Log3 $name, 4, "[$name] FireTV_adb: restarting adb server and repeating last command";
+             system($hash->{ADB}." kill-server");
+             system($hash->{ADB}." start-server");
+-            system($hash->{ADB}." connect ".$hash->{IP}.":".$hash->{PORT});
+-            $hash->{helper}{$name}{lastadbresponse} = `$hash->{helper}{$name}{lastadbcmd} 2>&1` || '';
++            system("timeout 3 ".$hash->{ADB}." connect ".$hash->{IP}.":".$hash->{PORT});
++            $hash->{helper}{$name}{lastadbresponse} = `timeout 3 $hash->{helper}{$name}{lastadbcmd} 2>&1` || '';
+         }
+         
+         $hash->{helper}{$name}{lastadbresponse} =~ s/^\s*//sg;
+@@ -672,7 +672,6 @@
+         $hash = $defs{$hash};
+     }
+     my $name = $hash->{NAME};
+-    my $ip = $hash->{IP};
+ 
+     # if marked as connected, disconnect first
+     if($action eq 'connect' && $hash->{adbconnected}) {
+@@ -685,7 +684,7 @@
+     }
+     
+     # connect/disconnect
+-    if(FireTV_adb($hash, "$action $ip")) {
++    if(FireTV_adb($hash, "$action ".$hash->{IP}.":".$hash->{PORT})) {
+         if($action eq 'disconnect') {
+             Log3 $name, 4, "[$name] FireTV_connect (disconnect): ".$hash->{helper}{$name}{lastadbresponse};
+             $hash->{adbconnected} = 0;

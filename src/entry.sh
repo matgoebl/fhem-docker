@@ -269,6 +269,9 @@ fi
 # creating user environment
 echo "Preparing user environment ..."
 i=1
+if [ `id -u` != 0 ]; then
+echo 'skipping most of it (not running as root)'
+else
 [ ! -s /etc/passwd.orig ] && cp -f /etc/passwd /etc/passwd.orig
 [ ! -s /etc/shadow.orig ] && cp -f /etc/shadow /etc/shadow.orig
 [ ! -s /etc/group.orig ] && cp -f /etc/group /etc/group.orig
@@ -446,6 +449,7 @@ chmod 640 ${FHEM_DIR}/.ssh/known_hosts
 chmod 600 ${FHEM_DIR}/.ssh/id_ed25519 ${FHEM_DIR}/.ssh/id_rsa
 chmod 640 ${FHEM_DIR}/.ssh/id_ed25519.pub ${FHEM_DIR}/.ssh/id_rsa.pub
 (( i++ ))
+fi
 
 # Function to print FHEM log in incremental steps to the docker log.
 [ -s "$( date +"${LOGFILE}" )" ] && OLDLINES=$( wc -l < "$( date +"${LOGFILE}" )" ) || OLDLINES=-1
@@ -508,6 +512,12 @@ function StartFHEM {
     (( i++ ))
   fi
 
+  if [ -s ${FHEM_DIR}/data/pre-start.sh ]; then
+    echo "$i. Running ${FHEM_DIR}/data/pre-start.sh script"
+    source ${FHEM_DIR}/data/pre-start.sh
+    (( i++ ))
+  fi
+
   # Update system environment
   #
 
@@ -516,6 +526,8 @@ function StartFHEM {
   if [ "${CONFIGTYPE}" == "configDB" ]; then
     echo ' skipped (detected configDB)'
     echo ' HINT: Make sure to have your FHEM configuration properly prepared for compatibility with this Docker Image _before_ using configDB !'
+  elif [ `id -u` != 0 ]; then
+    echo ' skipped (not running as root)'
   else
 
     if [ -s ${FHEM_DIR}/${CONFIGTYPE} ]; then
@@ -589,7 +601,11 @@ function StartFHEM {
   umask ${UMASK}
   echo -n -e "\nStarting FHEM ...\n"
   trap "StopFHEM" SIGTERM
-  su fhem -c "cd "${FHEM_DIR}"; perl fhem.pl "$CONFIGTYPE""
+  if [ `id -u` = 0 ]; then
+      su fhem -c "cd "${FHEM_DIR}"; perl fhem.pl "$CONFIGTYPE""
+  else
+      cd "${FHEM_DIR}"; perl fhem.pl "$CONFIGTYPE"
+  fi
   RET=$?
 
   # If process was unable to restart,
