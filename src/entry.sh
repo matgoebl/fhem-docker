@@ -34,6 +34,7 @@ CPAN_PKGS="${CPAN_PKGS:-}"
 PIP_PKGS="${PIP_PKGS:-}"
 NPM_PKGS="${NPM_PKGS:-}"
 
+if [ `id -u` = 0 ]; then
 [ ! -f /image_info.EMPTY ] && touch /image_info.EMPTY
 
 # Collect info about container
@@ -60,6 +61,7 @@ grep "memory:" /proc/self/cgroup  | cut -d "/" -f 3 > /docker.container.id
 captest --text | grep -P "^Effective:" | cut -d " " -f 2- | sed "s/, /\n/g" | sort | sed ':a;N;$!ba;s/\n/,/g' > /docker.container.cap.e
 captest --text | grep -P "^Permitted:" | cut -d " " -f 2- | sed "s/, /\n/g" | sort | sed ':a;N;$!ba;s/\n/,/g' > /docker.container.cap.p
 captest --text | grep -P "^Inheritable:" | cut -d " " -f 2- | sed "s/, /\n/g" | sort | sed ':a;N;$!ba;s/\n/,/g' > /docker.container.cap.i
+fi
 
 # This is a brand new container
 if [ -d "/fhem" ]; then
@@ -476,7 +478,11 @@ function PrintNewLines {
 function StopFHEM {
 	echo -e '\n\nSIGTERM signal received, sending "shutdown" command to FHEM!\n'
 	PID=$(<"${PIDFILE}")
+  if [ `id -u` = 0 ]; then
   su fhem -c "cd "${FHEM_DIR}"; perl fhem.pl ${TELNETPORT} shutdown"
+  else
+  killall5
+  fi
 	echo -e 'Waiting for FHEM process to terminate before stopping container:\n'
 
   # Wait for FHEM to complete shutdown

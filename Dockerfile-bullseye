@@ -19,7 +19,7 @@ ENV LANG=en_US.UTF-8 \
    TZ=Europe/Berlin
 
 # Custom installation packages
-ARG APT_PKGS=android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs xmlindent python3-gpxpy
+ARG APT_PKGS=android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs xmlindent python3-gpxpy netpbm less nginx-extras jshon
 
 RUN sed -i "s/bullseye main/bullseye main contrib non-free/g" /etc/apt/sources.list \
     && sed -i "s/bullseye-updates main/bullseye-updates main contrib non-free/g" /etc/apt/sources.list \
