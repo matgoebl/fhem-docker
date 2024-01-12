@@ -1,6 +1,6 @@
 ARG BASE_IMAGE="debian"
 ARG BASE_IMAGE_TAG="bullseye"
-FROM debian:bullseye-20231030-slim as bullseye_base
+FROM debian:bullseye-20240110-slim as bullseye_base
 
 ARG TARGETPLATFORM
 
@@ -19,7 +19,7 @@ ENV LANG=en_US.UTF-8 \
    TZ=Europe/Berlin
 
 # Custom installation packages
-ARG APT_PKGS=android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs xmlindent python3-gpxpy netpbm less nginx-extras jshon
+ARG APT_PKGS=""
 
 RUN sed -i "s/bullseye main/bullseye main contrib non-free/g" /etc/apt/sources.list \
     && sed -i "s/bullseye-updates main/bullseye-updates main contrib non-free/g" /etc/apt/sources.list \
@@ -463,7 +463,7 @@ FROM bullseye_base as bullseye_with-fhem
 
 RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get update \
     && LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
-    android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs
+    android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs xmlindent python3-gpxpy netpbm less nginx-extras jshon
 
 # Install base environment, cache is invalidated here, because we set a BUILD_DATE Variable which changes every run.
 COPY src/entry.sh src/health-check.sh src/ssh_known_hosts.txt /
