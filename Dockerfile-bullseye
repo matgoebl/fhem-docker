@@ -463,7 +463,11 @@ FROM bullseye_base as bullseye_with-fhem
 
 RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get update \
     && LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
-    android-tools-adb libhtml-treebuilder-xpath-perl joe libjpeg-turbo-progs xmlindent python3-gpxpy netpbm less nginx-extras jshon
+    android-tools-adb libhtml-treebuilder-xpath-perl libimage-magick-perl \
+    sox espeak-ng pulseaudio-utils alsa-utils \
+    libjpeg-turbo-progs netpbm xmlindent \
+    joe less jshon nginx-extras \
+    python3-gpxpy
 
 # Install base environment, cache is invalidated here, because we set a BUILD_DATE Variable which changes every run.
 COPY src/entry.sh src/health-check.sh src/ssh_known_hosts.txt /
@@ -568,6 +572,7 @@ RUN chmod 755 /*.sh /usr/local/bin/* \
 RUN groupadd --force --gid ${FHEM_GID} --non-unique fhem && \
     useradd --home /opt/fhem --shell /bin/bash --uid ${FHEM_UID} --no-create-home --no-user-group --non-unique fhem && \
     usermod --append --gid ${FHEM_GID} --groups ${FHEM_GID} fhem && \
+    echo "$BUILD_DATE" >/opt/fhem/BUILD_DATE && \
     chown -R ${FHEM_UID}:${FHEM_GID} /opt/fhem
 
 VOLUME [ "/opt/fhem" ]
